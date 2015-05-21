@@ -43,6 +43,13 @@
             android:layout_gravity="center"
             android:text="@string/record" />
 
+        <TextView
+            android:layout_width="50dp"
+            android:layout_height="133dp"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:text="0"
+            android:id="@+id/textCaptures" />
+
         <ImageButton
             android:id="@+id/info"
             style="@android:style/Widget.Material.Light.Button.Borderless"

@@ -38,6 +38,7 @@ import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Looper;
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
@@ -63,7 +64,8 @@ public class Camera2VideoFragment extends Fragment implements View.OnClickListen
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
 
     private static final String TAG = "Camera2VideoFragment";
-
+    private static final boolean DEBUG=true;
+    private static boolean go=false;
     static {
         ORIENTATIONS.append(Surface.ROTATION_0, 90);
         ORIENTATIONS.append(Surface.ROTATION_90, 0);
@@ -202,6 +204,105 @@ public class Camera2VideoFragment extends Fragment implements View.OnClickListen
         return fragment;
     }
 
+
+    int preped=0;
+    Activity myactivity = getActivity();
+    Runnable runable = new Runnable() {
+
+        boolean take;
+
+        public void setbool(boolean b) {
+
+            take = b;
+        }
+
+        @Override
+        public void run() {
+            if(DEBUG) Log.i("tag","runnable runing");
+            boolean tr = true;
+            while (tr) {
+
+
+                while (!go) {
+                    try {
+                        Thread.sleep(100);
+
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+
+                    }
+                }
+                //if(done-initial>=1000){//this will open a new activity that will then reopen this activitiy.
+                //    Intent workaround = new Intent(getActivity(),WorkAround.class);
+                //    startActivity(workaround);
+                //    getActivity().finish();
+                //    go=false;
+                //}
+
+
+                while (go) {
+
+                    if(DEBUG)Log.i("tag","redording");
+                    //go = false;
+
+                    if (preped == 0) {//the looper has to be prepared before you can start the looper that is in the takePicture() method
+                        Looper.prepare();
+                        preped = 1;
+                    }
+                    //startPreview();//start the preview here because take picture requires a running preview
+                    startRecordingVideo();
+                    try {
+                        Thread.sleep(60000);// need to make this listen for the picture to be taken
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
+                    /*
+                    this is where all of the work is started in the thread.
+                     */
+
+                    // TODO takePicture();//starts the image on the main thread NOT this thread.
+
+                    stopRecordingVideo();
+                }
+            }
+        }
+    };
+    Thread runner = new Thread(runable);
+
+    private void startUiUpdateThread() {
+        final Handler handler = new Handler();
+        Runnable runnable = new Runnable() {
+            private long startTime = System.currentTimeMillis();
+
+            public void run() {
+                boolean keep = true;
+                while (keep) {
+                    try {
+                        Thread.sleep(5000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    handler.post(new Runnable() {
+                        public void run() {
+                            if(go)
+                                mButtonVideo.setText(R.string.stop);
+                            else if(!go){
+                                mButtonVideo.setText(R.string.record);
+                            }
+
+                        }
+                    });
+                }
+            }
+        };
+        new Thread(runnable).start();
+    }
+
+
+
+
+
     /**
      * In this sample, we choose a video size with 3x4 aspect ratio. Also, we don't use sizes larger
      * than 1080p, since MediaRecorder cannot handle such a high-resolution video.
@@ -287,11 +388,21 @@ public class Camera2VideoFragment extends Fragment implements View.OnClickListen
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.video: {
-                if (mIsRecordingVideo) {
-                    stopRecordingVideo();
-                } else {
-                    startRecordingVideo();
+                if(!runner.isAlive()) {
+                    runner.start();
+                    startUiUpdateThread();
+                    go=true;
                 }
+                else if(runner.isAlive() && go==false)
+                    go=true;
+                else if(runner.isAlive()&&go==true)
+                    go=false;
+
+                //if (mIsRecordingVideo) {
+                //    stopRecordingVideo();
+                //} else {
+                //    startRecordingVideo();
+                //}
                 break;
             }
             case R.id.info: {
@@ -517,7 +628,8 @@ public class Camera2VideoFragment extends Fragment implements View.OnClickListen
     private void startRecordingVideo() {
         try {
             // UI
-            mButtonVideo.setText(R.string.stop);
+
+            //mButtonVideo.setText(R.string.stop);
             mIsRecordingVideo = true;
 
             // Start recording
@@ -530,7 +642,7 @@ public class Camera2VideoFragment extends Fragment implements View.OnClickListen
     private void stopRecordingVideo() {
         // UI
         mIsRecordingVideo = false;
-        mButtonVideo.setText(R.string.record);
+        //mButtonVideo.setText(R.string.record);
         // Stop recording
         mMediaRecorder.stop();
         mMediaRecorder.reset();
