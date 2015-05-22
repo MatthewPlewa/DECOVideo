@@ -59,6 +59,9 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
+import static android.content.Context.CAMERA_SERVICE;
+import static android.hardware.camera2.CameraCharacteristics.*;
+
 public class Camera2VideoFragment extends Fragment implements View.OnClickListener {
 
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
@@ -363,7 +366,7 @@ public class Camera2VideoFragment extends Fragment implements View.OnClickListen
         mTextureView = (AutoFitTextureView) view.findViewById(R.id.texture);
         mButtonVideo = (Button) view.findViewById(R.id.video);
         mButtonVideo.setOnClickListener(this);
-        view.findViewById(R.id.info).setOnClickListener(this);
+        //view.findViewById(R.id.info).setOnClickListener(this);
     }
 
     @Override
@@ -459,7 +462,7 @@ public class Camera2VideoFragment extends Fragment implements View.OnClickListen
             // Choose the sizes for camera preview and video recording
             CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
             StreamConfigurationMap map = characteristics
-                    .get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+                    .get(SCALER_STREAM_CONFIGURATION_MAP);
             mVideoSize = chooseVideoSize(map.getOutputSizes(MediaRecorder.class));
             mPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
                     width, height, mVideoSize);
@@ -557,7 +560,7 @@ public class Camera2VideoFragment extends Fragment implements View.OnClickListen
             return;
         }
         try {
-            setUpCaptureRequestBuilder(mPreviewBuilder);
+            setUpCaptureRequestBuilderPreview(mPreviewBuilder);
             HandlerThread thread = new HandlerThread("CameraPreview");
             thread.start();
             mPreviewSession.setRepeatingRequest(mPreviewBuilder.build(), null, mBackgroundHandler);
@@ -565,9 +568,19 @@ public class Camera2VideoFragment extends Fragment implements View.OnClickListen
             e.printStackTrace();
         }
     }
-
-    private void setUpCaptureRequestBuilder(CaptureRequest.Builder builder) {
+    private void setUpCaptureRequestBuilderPreview(CaptureRequest.Builder builder) throws CameraAccessException {
+        CameraManager manager = (CameraManager) getActivity().getSystemService(CAMERA_SERVICE);
+        CameraCharacteristics characteristics = manager.getCameraCharacteristics(mCameraDevice.getId());
         builder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+    }
+    private void setUpCaptureRequestBuilder(CaptureRequest.Builder builder) throws CameraAccessException {
+        CameraManager manager = (CameraManager) getActivity().getSystemService(CAMERA_SERVICE);
+        CameraCharacteristics characteristics = manager.getCameraCharacteristics(mCameraDevice.getId());
+        builder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+        builder.set(CaptureRequest.CONTROL_AE_MODE, CONTROL_AE_MODE_OFF);
+
+        builder.set(CaptureRequest.SENSOR_FRAME_DURATION,characteristics.get(SENSOR_INFO_MAX_FRAME_DURATION));
+        Log.i("Frame Duratation",characteristics.get(SENSOR_INFO_MAX_FRAME_DURATION)+"");
     }
 
     /**
@@ -611,7 +624,7 @@ public class Camera2VideoFragment extends Fragment implements View.OnClickListen
         mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
         mMediaRecorder.setOutputFile(getVideoFile(activity).getAbsolutePath());
         mMediaRecorder.setVideoEncodingBitRate(10000000);
-        mMediaRecorder.setVideoFrameRate(30);
+        mMediaRecorder.setVideoFrameRate(1);
         mMediaRecorder.setVideoSize(mVideoSize.getWidth(), mVideoSize.getHeight());
         mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
         mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
