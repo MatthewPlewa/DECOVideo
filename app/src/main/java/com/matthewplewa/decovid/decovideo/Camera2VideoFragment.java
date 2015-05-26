@@ -282,7 +282,7 @@ public class Camera2VideoFragment extends Fragment implements View.OnClickListen
                 boolean keep = true;
                 while (keep) {
                     try {
-                        Thread.sleep(5000);
+                        Thread.sleep(100);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -290,7 +290,7 @@ public class Camera2VideoFragment extends Fragment implements View.OnClickListen
                         public void run() {
                             if(go)
                                 mButtonVideo.setText(R.string.stop);
-                            else if(!go){
+                            else {
                                 mButtonVideo.setText(R.string.record);
                             }
 
@@ -624,7 +624,7 @@ public class Camera2VideoFragment extends Fragment implements View.OnClickListen
         mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
         mMediaRecorder.setOutputFile(getVideoFile(activity).getAbsolutePath());
         mMediaRecorder.setVideoEncodingBitRate(10000000);
-        mMediaRecorder.setVideoFrameRate(1);
+        mMediaRecorder.setVideoFrameRate(50);
         mMediaRecorder.setVideoSize(mVideoSize.getWidth(), mVideoSize.getHeight());
         mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
         mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
@@ -657,13 +657,11 @@ public class Camera2VideoFragment extends Fragment implements View.OnClickListen
         mIsRecordingVideo = false;
         //mButtonVideo.setText(R.string.record);
         // Stop recording
+
         mMediaRecorder.stop();
         mMediaRecorder.reset();
         Activity activity = getActivity();
-        if (null != activity) {
-            Toast.makeText(activity, "Video saved: " + getVideoFile(activity),
-                    Toast.LENGTH_SHORT).show();
-        }
+
         startPreview();
     }
 
